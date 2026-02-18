@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agent Factory</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #F5F5F0;
+  --surface:   #FFFFFF;
+  --surface2:  #FAFAF8;
+  --border:    #E4E4DC;
+  --border-md: #D0D0C4;
+  --text:      #1A1A18;
+  --text-2:    #6B6B60;
+  --text-3:    #A0A098;
+  --accent:    #1B4FD8;
+  --accent-bg: #EEF3FD;
+  --accent-dk: #1340B0;
+  --green:     #16794C;
+  --green-bg:  #EDFAF3;
+  --red:       #C0392B;
+  --red-bg:    #FDF0EE;
+  --sans:      'DM Sans', sans-serif;
+  --mono:      'DM Mono', monospace;
+  --radius:    8px;
+  --radius-sm: 5px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow:    0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+}
+
+html, body { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── LAYOUT ── */
+.shell {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  grid-template-rows: 56px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  z-index: 20;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.brand-mark {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-mark svg { width: 16px; height: 16px; color: #fff; }
+.brand-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+.brand-name span { color: var(--accent); }
+.topbar-div { width: 1px; height: 20px; background: var(--border); }
+.topbar-crumb {
+  font-size: 13px; color: var(--text-2);
+  display: flex; align-items: center; gap: 6px;
+}
+.topbar-crumb strong { color: var(--text); font-weight: 600; }
+.topbar-right { margin-left: auto; }
+.btn-refresh {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--text-2); cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-refresh:hover { background: var(--bg); border-color: var(--border-md); color: var(--text); }
+.btn-refresh svg { width: 14px; height: 14px; }
+.btn-refresh.spinning svg { animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  display: flex; flex-direction: column;
+}
+.nav-label {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-3);
+  padding: 0 16px; margin-bottom: 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px;
+  font-size: 13.5px; font-weight: 500;
+  color: var(--text-2); cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.12s; user-select: none;
+}
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active {
+  background: var(--accent-bg); color: var(--accent);
+  border-left-color: var(--accent); font-weight: 600;
+}
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.nav-count {
+  margin-left: auto;
+  font-size: 11px; font-weight: 600; font-family: var(--mono);
+  background: var(--border); color: var(--text-2);
+  padding: 1px 7px; border-radius: 20px;
+}
+.nav-item.active .nav-count { background: #D5E4FB; color: var(--accent-dk); }
+
+/* ── MAIN ── */
+.main { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.page-hd { padding: 26px 32px 0; flex-shrink: 0; }
+.page-title { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; }
+.page-sub { font-size: 13px; color: var(--text-2); margin-top: 3px; }
+
+/* ── TABS ── */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px; margin-top: 18px;
+  background: var(--bg); flex-shrink: 0;
+}
+.tab-btn {
+  padding: 10px 0; margin-right: 28px;
+  font-size: 13.5px; font-weight: 500;
+  color: var(--text-2); cursor: pointer;
+  border: none; border-bottom: 2px solid transparent;
+  background: transparent; font-family: var(--sans);
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* ── SCROLL ── */
+.scroll { flex: 1; overflow-y: auto; padding: 24px 32px 40px; }
+.scroll::-webkit-scrollbar { width: 5px; }
+.scroll::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+
+/* ── SECTIONS ── */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── STATS ── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 16px; margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 22px;
+  box-shadow: var(--shadow-sm); transition: box-shadow 0.2s;
+}
+.stat-card:hover { box-shadow: var(--shadow); }
+.stat-lbl { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2); margin-bottom: 10px; }
+.stat-val { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; color: var(--text); line-height: 1; }
+.stat-meta { font-size: 12px; color: var(--text-3); margin-top: 6px; }
+
+/* ── TABLE ── */
+.table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table thead th {
+  background: var(--surface2); padding: 11px 18px;
+  text-align: left; font-size: 11.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-2); border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  animation: rowIn 0.3s ease both;
+}
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--surface2); }
+@keyframes rowIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+.data-table tbody td { padding: 14px 18px; vertical-align: top; font-size: 13.5px; }
+
+.agent-cell { display: flex; align-items: center; gap: 10px; }
+.agent-avatar {
+  width: 32px; height: 32px; border-radius: 7px;
+  background: var(--accent-bg); border: 1px solid #D5E4FB;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.agent-avatar svg { width: 15px; height: 15px; color: var(--accent); }
+.agent-name { font-weight: 600; font-size: 13.5px; }
+.agent-id { font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-top: 1px; }
+.desc-cell { color: var(--text-2); font-size: 13px; max-width: 300px; line-height: 1.55; }
+.tools-cell { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 2px; }
+.tool-pill {
+  font-family: var(--mono); font-size: 11px;
+  padding: 3px 9px;
+  background: var(--green-bg); color: var(--green);
+  border: 1px solid #C0EDD6; border-radius: 20px; font-weight: 500;
+}
+.act-cell { display: flex; gap: 6px; align-items: center; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: var(--radius-sm);
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  cursor: pointer; border: none; outline: none; transition: all 0.15s;
+}
+.btn svg { width: 13px; height: 13px; }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-2); }
+.btn-ghost:hover { background: var(--bg); border-color: var(--border-md); color: var(--text); }
+.btn-primary { background: var(--accent); color: #fff; border: 1px solid var(--accent); }
+.btn-primary:hover { background: var(--accent-dk); }
+.btn-del { background: transparent; border: 1px solid var(--border); color: var(--red); }
+.btn-del:hover { background: var(--red-bg); border-color: #F0C4BF; }
+
+/* ── TOOLS GRID ── */
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 16px; }
+.tool-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow-sm); transition: all 0.2s;
+  animation: rowIn 0.3s ease both;
+}
+.tool-card:hover { box-shadow: var(--shadow); border-color: var(--border-md); }
+.tool-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.tool-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--green-bg); border: 1px solid #C0EDD6;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.tool-icon svg { width: 16px; height: 16px; color: var(--green); }
+.tool-name-txt { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+.tool-id-txt { font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.tool-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 14px; }
+.schema-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 6px; }
+.schema-block {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--text-2);
+  max-height: 90px; overflow: hidden; position: relative; line-height: 1.6;
+}
+.schema-block::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 28px; background: linear-gradient(transparent, var(--bg));
+}
+.tool-foot {
+  display: flex; justify-content: flex-end; gap: 8px;
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+
+/* ── MODAL ── */
+.backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(10,10,8,0.45);
+  z-index: 100; align-items: center; justify-content: center; padding: 20px;
+}
+.backdrop.open { display: flex; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow-lg);
+  width: 540px; max-width: 100%; max-height: 90vh;
+  display: flex; flex-direction: column;
+  animation: mIn 0.18s ease;
+}
+@keyframes mIn { from { opacity:0; transform:scale(0.97) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.modal-sm { width: 400px; }
+.modal-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.modal-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.modal-x {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 5px; border: 1px solid var(--border);
+  background: transparent; cursor: pointer;
+  font-size: 16px; color: var(--text-2); transition: all 0.15s; line-height: 1;
+}
+.modal-x:hover { background: var(--bg); color: var(--text); }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
+.modal-ft {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+}
+
+/* ── FORM ── */
+.frow { margin-bottom: 18px; }
+.frow:last-child { margin-bottom: 0; }
+.flbl { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.flbl .req { color: var(--red); margin-left: 2px; }
+.finput, .ftarea {
+  width: 100%; background: var(--surface);
+  border: 1px solid var(--border-md); border-radius: var(--radius-sm);
+  padding: 9px 12px; font-family: var(--sans); font-size: 13.5px;
+  color: var(--text); outline: none; transition: all 0.15s;
+}
+.finput:focus, .ftarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(27,79,216,0.1);
+}
+.finput::placeholder, .ftarea::placeholder { color: var(--text-3); }
+.ftarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+.fmono { font-family: var(--mono); font-size: 12.5px; }
+.fhint { font-size: 11.5px; color: var(--text-3); margin-top: 5px; }
+.finput[readonly] { background: var(--bg); color: var(--text-2); cursor: default; }
+.chip-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 12px; padding: 4px 10px;
+  background: var(--green-bg); border: 1px solid #C0EDD6;
+  color: var(--green); border-radius: 20px;
+}
+.chip-x { cursor: pointer; color: var(--text-3); font-size: 14px; line-height: 1; transition: color 0.12s; }
+.chip-x:hover { color: var(--red); }
+
+/* ── DETAIL ── */
+.dgrp { margin-bottom: 20px; }
+.dgrp:last-child { margin-bottom: 0; }
+.dlbl { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 6px; }
+.dval { font-size: 13.5px; color: var(--text); line-height: 1.65; }
+.dval.mono { font-family: var(--mono); font-size: 13px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 13px; }
+
+/* ── EMPTY ── */
+.empty { text-align: center; padding: 52px 20px; }
+.empty-ico {
+  width: 44px; height: 44px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+}
+.empty-ico svg { width: 20px; height: 20px; color: var(--text-3); }
+.empty h3 { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+.empty p { font-size: 13px; color: var(--text-2); }
+
+/* ── CONFIRM ── */
+.conf-body { padding: 24px; }
+.conf-ico {
+  width: 44px; height: 44px; border-radius: 9px;
+  background: var(--red-bg); border: 1px solid #F0C4BF;
+  display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+}
+.conf-ico svg { width: 20px; height: 20px; color: var(--red); }
+.conf-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.conf-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+
+/* ── TOAST ── */
+.toast-area { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; background: var(--text); color: #fff;
+  border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  animation: tIn 0.22s ease; max-width: 320px;
+}
+.toast.success { background: #15803D; }
+.toast.error { background: var(--red); }
+.toast svg { width: 15px; height: 15px; flex-shrink: 0; }
+@keyframes tIn { from { opacity:0; transform:translateY(10px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+/* ── SECTION HEADER ── */
+.sec-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.sec-title { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+/* ══ CHAT STYLES ══════════════════════════════════════════ */
+.scroll.chat-mode {
+  overflow: hidden;
+  padding: 0 32px;
+  display: flex;
+  flex-direction: column;
+}
+/* When chat tab is active, sec-agents also needs to flex */
+.scroll.chat-mode #sec-agents {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.chat-tab-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.chat-params {
+  display: flex; align-items: flex-end; gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chat-param-field { display: flex; flex-direction: column; gap: 3px; }
+.chat-param-label {
+  font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-3);
+}
+.chat-param-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border-md); border-radius: var(--radius-sm);
+  background: var(--surface2);
+  font-family: var(--mono); font-size: 12px; color: var(--text);
+  outline: none; transition: all 0.15s; width: 180px;
+}
+.chat-param-input.narrow { width: 130px; }
+.chat-param-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27,79,216,0.1); }
+.chat-log {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 18px;
+  padding: 20px 0;
+}
+.chat-log::-webkit-scrollbar { width: 5px; }
+.chat-log::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+.chat-placeholder {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  color: var(--text-3); text-align: center;
+  pointer-events: none;
+}
+.chat-placeholder svg { width: 32px; height: 32px; margin-bottom: 4px; opacity: .6; }
+.chat-placeholder p { font-size: 13px; }
+/* bubbles */
+.cmsg { display: flex; flex-direction: column; gap: 4px; animation: rowIn 0.22s ease both; }
+.cmsg-label {
+  font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-3);
+}
+.cmsg-bubble {
+  padding: 11px 15px; border-radius: var(--radius);
+  font-size: 13.5px; line-height: 1.65;
+}
+.cmsg-user { align-items: flex-end; }
+.cmsg-user .cmsg-bubble {
+  background: var(--accent); color: #fff;
+  border-radius: 10px 10px 3px 10px; max-width: 75%;
+}
+.cmsg-agent .cmsg-bubble {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); box-shadow: var(--shadow-sm);
+  border-radius: 3px 10px 10px 10px; max-width: 85%;
+}
+.cmsg-thinking .cmsg-bubble {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-2); box-shadow: var(--shadow-sm);
+  border-radius: 3px 10px 10px 10px;
+  display: flex; align-items: center; gap: 9px;
+}
+.cmsg-error .cmsg-bubble {
+  background: var(--red-bg); border: 1px solid #F0C4BF;
+  color: var(--red); border-radius: 3px 10px 10px 10px; max-width: 85%;
+}
+/* thinking dots */
+.tdots { display: flex; gap: 4px; align-items: center; }
+.tdots span { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); animation: blink 1.2s ease-in-out infinite; }
+.tdots span:nth-child(2) { animation-delay: .2s; }
+.tdots span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,80%,100%{opacity:.3;transform:scale(.85)} 40%{opacity:1;transform:scale(1)} }
+/* tool call accordion */
+.tc-wrap { max-width: 85%; display: flex; flex-direction: column; gap: 5px; }
+.tc-toggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px 5px 9px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; font-weight: 600;
+  color: var(--text-2); cursor: pointer;
+  transition: all 0.15s; user-select: none; width: fit-content;
+}
+.tc-toggle:hover { background: var(--bg); border-color: var(--border-md); color: var(--text); }
+.tc-icon {
+  width: 20px; height: 20px; border-radius: 4px;
+  background: #F5F3FF; border: 1px solid #DDD6FE;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.tc-icon svg { width: 11px; height: 11px; color: #7C3AED; }
+.tc-count {
+  font-family: var(--mono); font-size: 10px;
+  background: #EDE9FE; color: #7C3AED;
+  padding: 1px 6px; border-radius: 20px;
+}
+.tc-chevron { width: 13px; height: 13px; transition: transform 0.18s; margin-left: 2px; }
+.tc-chevron.open { transform: rotate(90deg); }
+.tc-body {
+  display: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.tc-body.open { display: block; }
+.tc-item { padding: 13px 15px; border-bottom: 1px solid var(--border); }
+.tc-item:last-child { border-bottom: none; }
+.tc-item-hd { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; flex-wrap: wrap; }
+.tc-kind {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 2px 7px; border-radius: 3px;
+}
+.tc-kind-call  { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
+.tc-kind-resp  { background: var(--green-bg); color: var(--green); border: 1px solid #C0EDD6; }
+.tc-fn { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
+.tc-id { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin-left: auto; }
+.tc-ok  { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: var(--green-bg); color: var(--green); border: 1px solid #C0EDD6; }
+.tc-err { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: var(--red-bg); color: var(--red); border: 1px solid #F0C4BF; }
+.tc-sub { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 5px; }
+.tc-json {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 9px 11px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--text-2);
+  line-height: 1.6; white-space: pre-wrap;
+  max-height: 180px; overflow-y: auto;
+}
+.tc-json::-webkit-scrollbar { width: 4px; }
+.tc-json::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
+
+/* ── Tool response rendered text block ── */
+.tc-resp-text {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 13px;
+  font-size: 13px; color: var(--text); line-height: 1.65;
+  white-space: pre-wrap; max-height: 220px; overflow-y: auto;
+}
+.tc-resp-text::-webkit-scrollbar { width: 4px; }
+.tc-resp-text::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
+
+/* input area */
+.chat-input-area {
+  flex-shrink: 0;
+  padding: 12px 0 18px;
+  border-top: 1px solid var(--border);
+}
+.chat-input-box {
+  display: flex; align-items: flex-end; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border-md);
+  border-radius: 9px; padding: 8px 8px 8px 14px;
+  transition: all 0.15s;
+}
+.chat-input-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27,79,216,0.1); }
+.chat-ta {
+  flex: 1; border: none; background: transparent;
+  font-family: var(--sans); font-size: 13.5px; color: var(--text);
+  resize: none; outline: none; line-height: 1.55;
+  min-height: 22px; max-height: 130px; overflow-y: auto;
+}
+.chat-ta::placeholder { color: var(--text-3); }
+.chat-ta::-webkit-scrollbar { width: 4px; }
+.chat-ta::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
+.chat-send {
+  width: 32px; height: 32px; border-radius: 6px;
+  background: var(--accent); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.chat-send:hover { background: var(--accent-dk); }
+.chat-send:disabled { background: var(--border); cursor: not-allowed; }
+.chat-send svg { width: 14px; height: 14px; color: #fff; }
+.chat-hint-txt { font-size: 11.5px; color: var(--text-3); margin-top: 6px; }
+.chat-hint-txt kbd { font-family: var(--mono); font-size: 10px; padding: 1px 5px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <span class="brand-name">Agent <span>Factory</span></span>
+    </div>
+    <div class="topbar-div"></div>
+    <div class="topbar-crumb">
+      Platform
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      <strong id="crumbCurrent">Agents</strong>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-refresh" onclick="refreshAll()" id="refreshBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="nav-label">Workspace</div>
+    <div class="nav-item active" onclick="goSection('agents',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Agents
+      <span class="nav-count" id="navA">—</span>
+    </div>
+    <div class="nav-item" onclick="goSection('tools',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      Tools
+      <span class="nav-count" id="navT">—</span>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="page-hd">
+      <div class="page-title" id="pageTitle">Agents</div>
+      <div class="page-sub" id="pageSub">Manage and monitor your deployed AI agents</div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar" id="tabBar">
+      <button class="tab-btn active" id="tOverview" onclick="goTab('overview')">Overview</button>
+      <button class="tab-btn" id="tAll" onclick="goTab('all')">All Records</button>
+      <button class="tab-btn" id="tChat" onclick="goTab('chat')" style="display:none">Chat</button>
+    </div>
+
+    <div class="scroll" id="mainScroll">
+
+      <!-- ===== AGENTS ===== -->
+      <div class="section active" id="sec-agents">
+
+        <!-- Overview tab -->
+        <div id="pOverview">
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-lbl">Total Agents</div>
+              <div class="stat-val" id="sAgents">—</div>
+              <div class="stat-meta">Registered in system</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-lbl">Total Tools</div>
+              <div class="stat-val" id="sTools">—</div>
+              <div class="stat-meta">Available integrations</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-lbl">Tool Assignments</div>
+              <div class="stat-val" id="sAssign">—</div>
+              <div class="stat-meta">Across all agents</div>
+            </div>
+          </div>
+          <div class="sec-hd"><div class="sec-title">Agents</div></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Agent</th><th>Description</th><th>Tools</th><th>Actions</th></tr></thead>
+              <tbody id="tBody1"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- All tab -->
+        <div id="pAll" style="display:none">
+          <div class="sec-hd"><div class="sec-title">All Agents</div></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Agent</th><th>Description</th><th>Tools</th><th>Actions</th></tr></thead>
+              <tbody id="tBody2"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Chat tab -->
+        <div id="pChat" style="display:none; flex:1; min-height:0; flex-direction:column;" class="chat-tab-panel">
+
+        <!-- Session params -->
+        <div class="chat-params">
+          <div class="chat-param-field">
+            <div class="chat-param-label">Session ID</div>
+            <input class="chat-param-input" id="chatSessionId" value="session-1" placeholder="session-id"/>
+          </div>
+          <div class="chat-param-field">
+            <div class="chat-param-label">User ID</div>
+            <input class="chat-param-input narrow" id="chatUserId" value="user-1" placeholder="user-id"/>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="chatClear()" style="margin-bottom:1px">Clear</button>
+        </div>
+
+        <!-- Message log -->
+        <div class="chat-log" id="chatLog">
+          <div class="chat-placeholder" id="chatPlaceholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <p>Send a message to invoke the agent</p>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input-area">
+          <div class="chat-input-box">
+            <textarea class="chat-ta" id="chatInput" rows="1"
+              placeholder="Message the agent…"
+              onkeydown="chatKey(event)"
+              oninput="chatResize(this)"></textarea>
+            <button class="chat-send" id="chatSendBtn" onclick="chatSend()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+          <div class="chat-hint-txt"><kbd>Enter</kbd> send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> newline</div>
+        </div>
+
+      </div><!-- /pChat -->
+
+      </div><!-- /sec-agents -->
+
+      <!-- ===== TOOLS ===== -->
+      <div class="section" id="sec-tools">
+        <div class="sec-hd"><div class="sec-title">All Tools</div></div>
+        <div class="tools-grid" id="toolsGrid"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ── EDIT AGENT MODAL ── -->
+<div class="backdrop" id="mAgent">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">Edit Agent</div>
+      <button class="modal-x" onclick="closeM('mAgent')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="frow">
+        <label class="flbl">Agent ID</label>
+        <input class="finput" id="eAgentName" readonly/>
+        <div class="fhint">Identifier cannot be changed.</div>
+      </div>
+      <div class="frow">
+        <label class="flbl">Description</label>
+        <textarea class="ftarea" id="eAgentDesc" rows="3" placeholder="Describe what this agent does..."></textarea>
+      </div>
+      <div class="frow">
+        <label class="flbl">Instructions</label>
+        <textarea class="ftarea fmono" id="eAgentInstr" rows="6" placeholder="System prompt / instructions..."></textarea>
+      </div>
+      <div class="frow">
+        <label class="flbl">Tools</label>
+        <div class="chip-row">
+          <input class="finput" id="chipInp" placeholder="tool_name" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addChip()}"/>
+          <button class="btn btn-ghost btn-sm" onclick="addChip()">Add</button>
+        </div>
+        <div class="chip-list" id="chipList"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeM('mAgent')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAgent()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW AGENT MODAL ── -->
+<div class="backdrop" id="mDetail">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="mDetailTitle">Agent Details</div>
+      <button class="modal-x" onclick="closeM('mDetail')">✕</button>
+    </div>
+    <div class="modal-body" id="mDetailBody"></div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeM('mDetail')">Close</button>
+      <button class="btn btn-primary" id="detailEditBtn">Edit Agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT TOOL MODAL ── -->
+<div class="backdrop" id="mTool">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">Edit Tool</div>
+      <button class="modal-x" onclick="closeM('mTool')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="frow">
+        <label class="flbl">Tool Name</label>
+        <input class="finput fmono" id="eToolName" readonly/>
+        <div class="fhint">Identifier used as the path parameter — cannot be changed.</div>
+      </div>
+      <div class="frow">
+        <label class="flbl">Description <span class="req">*</span></label>
+        <textarea class="ftarea" id="eToolDesc" rows="3" placeholder="Describe what this tool does..."></textarea>
+      </div>
+      <div class="frow">
+        <label class="flbl">Input Schema <span style="font-weight:400;color:var(--text-3);font-size:11px;margin-left:4px">— JSON object</span></label>
+        <textarea class="ftarea fmono" id="eToolSchema" rows="10" placeholder='{\n  "type": "object",\n  "properties": {}\n}'></textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeM('mTool')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTool()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM DELETE ── -->
+<div class="backdrop" id="mConfirm">
+  <div class="modal modal-sm">
+    <div class="modal-hd">
+      <div class="modal-title">Confirm Deletion</div>
+      <button class="modal-x" onclick="closeM('mConfirm')">✕</button>
+    </div>
+    <div class="conf-body">
+      <div class="conf-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      </div>
+      <div class="conf-title" id="confTitle">Delete item?</div>
+      <div class="conf-desc" id="confDesc">This action cannot be undone.</div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeM('mConfirm')">Cancel</button>
+      <button class="btn btn-del" id="confOk">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-area" id="toastArea"></div>
+
+<script>
+const BASE = 'http://localhost:8006';
+let agents = [], tools = [], chips = [];
+
+async function api(method, path, body) {
+  const o = { method, headers: {'Content-Type':'application/json'} };
+  if (body) o.body = JSON.stringify(body);
+  const r = await fetch(BASE + path, o);
+  if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+  return r.json();
+}
+
+// ── LOAD ──────────────────────────────────────────────────────────
+async function loadAgents() {
+  try {
+    const d = await api('GET', '/get_all_agents');
+    agents = Array.isArray(d) ? d : [];
+    renderAgentsTable();
+    updateStats();
+    document.getElementById('navA').textContent = agents.length;
+  } catch(e) {
+    setEmptyRow('tBody1', 'Could not connect to API — ' + e.message);
+    setEmptyRow('tBody2', 'Could not connect to API — ' + e.message);
+    toast('Failed to load agents', 'error');
+  }
+}
+
+async function loadTools() {
+  try {
+    const d = await api('GET', '/get_all_tools');
+    tools = Array.isArray(d) ? d : [];
+    renderTools();
+    updateStats();
+    document.getElementById('navT').textContent = tools.length;
+  } catch(e) {
+    document.getElementById('toolsGrid').innerHTML = emptyHTML('Could not load tools');
+    toast('Failed to load tools', 'error');
+  }
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  const promises = [loadAgents()];
+  if (document.getElementById('sec-tools').classList.contains('active')) promises.push(loadTools());
+  await Promise.all(promises);
+  btn.classList.remove('spinning');
+  toast('Refreshed successfully', 'success');
+}
+
+// ── RENDER ────────────────────────────────────────────────────────
+function renderAgentsTable() {
+  const rows = agents.length ? agents.map(agentRow).join('') : emptyRowHTML('No agents found', 4);
+  document.getElementById('tBody1').innerHTML = rows;
+  document.getElementById('tBody2').innerHTML = rows;
+}
+
+function agentRow(a, i) {
+  const name = a.agent_name || 'Unnamed';
+  const desc = a.agent_description || '—';
+  const tls  = Array.isArray(a.tools) ? a.tools : [];
+  const disp = name.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  return `<tr style="animation-delay:${i*0.04}s">
+    <td><div class="agent-cell">
+      <div class="agent-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/></svg></div>
+      <div><div class="agent-name">${x(disp)}</div><div class="agent-id">${x(name)}</div></div>
+    </div></td>
+    <td><div class="desc-cell">${x(desc.length>95?desc.slice(0,95)+'…':desc)}</div></td>
+    <td><div class="tools-cell">${tls.length?tls.map(t=>`<span class="tool-pill">${x(t)}</span>`).join(''):'<span style="color:var(--text-3);font-size:12px">None</span>'}</div></td>
+    <td><div class="act-cell">
+      <button class="btn btn-ghost btn-sm" onclick="viewAgent('${x(name)}')">View</button>
+      <button class="btn btn-ghost btn-sm" onclick="editAgent('${x(name)}')">Edit</button>
+      <button class="btn btn-del btn-sm" onclick="confirmDel('agent','${x(name)}')">Delete</button>
+    </div></td>
+  </tr>`;
+}
+
+function renderTools() {
+  const g = document.getElementById('toolsGrid');
+  if (!tools.length) { g.innerHTML = emptyHTML('No tools found'); return; }
+  g.innerHTML = tools.map((t,i) => {
+    const name = t.name || t.tool_name || 'Unnamed';
+    const desc = t.description || '—';
+    const schema = t.inputSchema || t.input_schema || {};
+    const disp = name.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    return `<div class="tool-card" style="animation-delay:${i*0.05}s">
+      <div class="tool-head">
+        <div class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
+        <div><div class="tool-name-txt">${x(disp)}</div><div class="tool-id-txt">${x(name)}</div></div>
+      </div>
+      <div class="tool-desc">${x(desc.length>130?desc.slice(0,130)+'…':desc)}</div>
+      <div class="schema-lbl">Input Schema</div>
+      <div class="schema-block">${x(JSON.stringify(schema,null,2))}</div>
+      <div class="tool-foot">
+        <button class="btn btn-ghost btn-sm" onclick="editTool('${x(name)}')">Edit</button>
+        <button class="btn btn-del btn-sm" onclick="confirmDel('tool','${x(name)}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  document.getElementById('sAgents').textContent = agents.length;
+  document.getElementById('sTools').textContent = tools.length;
+  document.getElementById('sAssign').textContent = agents.reduce((s,a)=>s+(Array.isArray(a.tools)?a.tools.length:0),0);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────
+function goSection(name, el) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  const m = {
+    agents:['Agents','Manage and monitor your deployed AI agents'],
+    tools: ['Tools','Configure and inspect available tool integrations'],
+  };
+  document.getElementById('pageTitle').textContent = m[name][0];
+  document.getElementById('pageSub').textContent   = m[name][1];
+  document.getElementById('crumbCurrent').textContent = m[name][0];
+  document.getElementById('tabBar').style.display = name==='agents'?'flex':'none';
+
+  // Show Chat tab only when on Agents section
+  document.getElementById('tChat').style.display = name==='agents' ? '' : 'none';
+
+  // If switching away from agents, make sure scroll is not in chat-mode
+  const scroll = document.getElementById('mainScroll');
+  scroll.classList.remove('chat-mode');
+
+  if (name==='tools' && !tools.length) loadTools();
+}
+
+function goTab(name) {
+  const scroll = document.getElementById('mainScroll');
+  const pChat  = document.getElementById('pChat');
+
+  document.getElementById('pOverview').style.display = name==='overview' ? 'block' : 'none';
+  document.getElementById('pAll').style.display      = name==='all'      ? 'block' : 'none';
+
+  if (name === 'chat') {
+    pChat.style.display = 'flex';
+    scroll.classList.add('chat-mode');
+  } else {
+    pChat.style.display = 'none';
+    scroll.classList.remove('chat-mode');
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const map = { overview:'tOverview', all:'tAll', chat:'tChat' };
+  document.getElementById(map[name]).classList.add('active');
+}
+
+// ── VIEW AGENT ────────────────────────────────────────────────────
+function viewAgent(name) {
+  const a = agents.find(z=>z.agent_name===name);
+  if (!a) return;
+  const tls = Array.isArray(a.tools)?a.tools:[];
+  const disp = name.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  document.getElementById('mDetailTitle').textContent = disp;
+  document.getElementById('mDetailBody').innerHTML = `
+    <div class="dgrp"><div class="dlbl">Agent ID</div><div class="dval mono">${x(name)}</div></div>
+    <div class="dgrp"><div class="dlbl">Description</div><div class="dval">${x(a.agent_description||'—')}</div></div>
+    <div class="dgrp"><div class="dlbl">Instructions</div><div class="dval mono" style="max-height:160px;overflow-y:auto;white-space:pre-wrap">${x(a.agent_instruction||'—')}</div></div>
+    <div class="dgrp"><div class="dlbl">Assigned Tools</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+        ${tls.length?tls.map(t=>`<span class="tool-pill">${x(t)}</span>`).join(''):'<span style="color:var(--text-3);font-size:13px">No tools assigned</span>'}
+      </div></div>`;
+  document.getElementById('detailEditBtn').onclick = ()=>{ closeM('mDetail'); editAgent(name); };
+  openM('mDetail');
+}
+
+// ── EDIT AGENT ────────────────────────────────────────────────────
+function editAgent(name) {
+  const a = agents.find(z=>z.agent_name===name);
+  if (!a) return;
+  chips = Array.isArray(a.tools)?[...a.tools]:[];
+  document.getElementById('eAgentName').value  = name;
+  document.getElementById('eAgentDesc').value  = a.agent_description||'';
+  document.getElementById('eAgentInstr').value = a.agent_instruction||'';
+  renderChips();
+  openM('mAgent');
+}
+
+async function saveAgent() {
+  const name = document.getElementById('eAgentName').value.trim();
+  const body = {
+    agent_name: name,
+    agent_description: document.getElementById('eAgentDesc').value.trim(),
+    agent_instruction:  document.getElementById('eAgentInstr').value.trim(),
+    tools: [...chips]
+  };
+  try {
+    await api('PUT', `/update_agent/${name}`, body);
+    toast('Agent updated successfully','success');
+    closeM('mAgent'); loadAgents();
+  } catch(e) { toast('Save failed: '+e.message,'error'); }
+}
+
+// ── EDIT TOOL ─────────────────────────────────────────────────────
+function editTool(name) {
+  const t = tools.find(z=>(z.name||z.tool_name)===name);
+  if (!t) return;
+  const raw = t.raw || t;
+  document.getElementById('eToolName').value   = name;
+  document.getElementById('eToolDesc').value   = raw.description || t.description || '';
+  document.getElementById('eToolSchema').value = JSON.stringify(raw.inputSchema || raw.input_schema || t.inputSchema || t.input_schema || {}, null, 2);
+  openM('mTool');
+}
+
+async function saveTool() {
+  const name = document.getElementById('eToolName').value.trim();
+  let schema;
+  try { schema = JSON.parse(document.getElementById('eToolSchema').value); }
+  catch { toast('Invalid JSON in schema field', 'error'); return; }
+
+  const raw = {
+    name,
+    description: document.getElementById('eToolDesc').value.trim(),
+    inputSchema: schema
+  };
+
+  try {
+    await api('PUT', `/update_tool/${name}`, raw);
+    toast('Tool updated successfully', 'success');
+    closeM('mTool'); loadTools();
+  } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+}
+
+// ── DELETE ────────────────────────────────────────────────────────
+function confirmDel(type, name) {
+  document.getElementById('confTitle').textContent = `Delete ${type}?`;
+  document.getElementById('confDesc').innerHTML = `You are about to permanently delete <strong>${x(name.replace(/_/g,' '))}</strong>. This action cannot be undone.`;
+  document.getElementById('confOk').onclick = async () => {
+    closeM('mConfirm');
+    try {
+      await api('DELETE', `/${type==='agent'?'delete_agent':'delete_tool'}/${name}`);
+      toast(`${type==='agent'?'Agent':'Tool'} deleted successfully`,'success');
+      type==='agent'?loadAgents():loadTools();
+    } catch(e) { toast('Delete failed: '+e.message,'error'); }
+  };
+  openM('mConfirm');
+}
+
+// ── CHIPS ─────────────────────────────────────────────────────────
+function addChip() {
+  const inp = document.getElementById('chipInp');
+  const v = inp.value.trim();
+  if (!v||chips.includes(v)) { inp.value=''; return; }
+  chips.push(v); inp.value=''; renderChips();
+}
+function removeChip(i) { chips.splice(i,1); renderChips(); }
+function renderChips() {
+  document.getElementById('chipList').innerHTML = chips.map((c,i)=>
+    `<span class="chip">${x(c)}<span class="chip-x" onclick="removeChip(${i})">×</span></span>`).join('');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────
+function openM(id)  { document.getElementById(id).classList.add('open'); }
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.backdrop').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('open'); }));
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function toast(msg, type='default') {
+  const icons = {
+    success:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    default:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>`
+  };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = (icons[type]||icons.default) + x(msg);
+  document.getElementById('toastArea').appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function x(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function setEmptyRow(id, msg) { document.getElementById(id).innerHTML = `<tr><td colspan="4">${emptyHTML(msg)}</td></tr>`; }
+function emptyRowHTML(msg, cols) { return `<tr><td colspan="${cols}">${emptyHTML(msg)}</td></tr>`; }
+function emptyHTML(msg) {
+  return `<div class="empty"><div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.5" r="0.6" fill="currentColor"/></svg></div><h3>No data</h3><p>${msg}</p></div>`;
+}
+
+// ── TOOL RESPONSE CONTENT EXTRACTOR ───────────────────────────────
+/**
+ * Extracts human-readable text from a tool response's content field.
+ * Handles all common shapes:
+ *   • string  → return as-is
+ *   • []  → "(empty)"
+ *   • [{type:"text", text:"…"}, …]  → join all text parts
+ *   • [{type:"image", …}]  → "(image)"
+ *   • any other object/array  → pretty JSON
+ */
+function extractResponseContent(content) {
+  if (content == null) return '(no content)';
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    if (content.length === 0) return '(empty)';
+    // MCP-style content block array
+    const parts = content.map(block => {
+      if (!block || typeof block !== 'object') return String(block);
+      if (block.type === 'text' && block.text != null) return block.text;
+      if (block.type === 'image') return '(image)';
+      if (block.type === 'resource') return block.resource?.text ?? '(resource)';
+      // fallback: JSON for unknown block types
+      return JSON.stringify(block, null, 2);
+    });
+    return parts.join('\n\n');
+  }
+  // plain object
+  if (typeof content === 'object') return JSON.stringify(content, null, 2);
+  return String(content);
+}
+
+// ── CHAT ──────────────────────────────────────────────────────────
+let chatBusy = false;
+
+function chatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chatSend(); }
+}
+
+function chatResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 130) + 'px';
+}
+
+function chatClear() {
+  document.getElementById('chatLog').innerHTML = `
+    <div class="chat-placeholder" id="chatPlaceholder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <p>Send a message to invoke the agent</p>
+    </div>`;
+}
+
+async function chatSend() {
+  if (chatBusy) return;
+  const inp = document.getElementById('chatInput');
+  const query = inp.value.trim();
+  if (!query) return;
+
+  const sessionId = document.getElementById('chatSessionId').value.trim() || 'session-1';
+  const userId    = document.getElementById('chatUserId').value.trim()    || 'user-1';
+
+  const ph = document.getElementById('chatPlaceholder');
+  if (ph) ph.remove();
+
+  chatPushUser(query);
+  inp.value = ''; inp.style.height = 'auto';
+
+  chatBusy = true;
+  document.getElementById('chatSendBtn').disabled = true;
+  const thinkId = chatPushThinking();
+
+  try {
+    const params = new URLSearchParams({ session_id: sessionId, user_id: userId, query });
+    const r = await fetch(`${BASE}/invoke_agent?${params}`, { method: 'POST' });
+    if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+    const data = await r.json();
+    document.getElementById(thinkId)?.remove();
+    chatPushResponse(data);
+  } catch(e) {
+    document.getElementById(thinkId)?.remove();
+    chatPushError('Request failed: ' + e.message);
+  } finally {
+    chatBusy = false;
+    document.getElementById('chatSendBtn').disabled = false;
+  }
+}
+
+function chatPushUser(text) {
+  const log = document.getElementById('chatLog');
+  const el = document.createElement('div');
+  el.className = 'cmsg cmsg-user';
+  el.innerHTML = `<div class="cmsg-label">You</div>
+    <div class="cmsg-bubble">${x(text).replace(/\n/g,'<br>')}</div>`;
+  log.appendChild(el); chatScroll();
+}
+
+function chatPushThinking() {
+  const id = 'think-' + Date.now();
+  const log = document.getElementById('chatLog');
+  const el = document.createElement('div');
+  el.id = id; el.className = 'cmsg cmsg-agent cmsg-thinking';
+  el.innerHTML = `<div class="cmsg-label">Agent</div>
+    <div class="cmsg-bubble">
+      <div class="tdots"><span></span><span></span><span></span></div>
+      <span style="font-size:12px">Thinking…</span>
+    </div>`;
+  log.appendChild(el); chatScroll();
+  return id;
+}
+
+function chatPushResponse(data) {
+  const log = document.getElementById('chatLog');
+  const wrap = document.createElement('div');
+  wrap.className = 'cmsg cmsg-agent';
+  wrap.style.gap = '5px';
+  wrap.innerHTML = `<div class="cmsg-label">Agent</div>`;
+
+  // ── Tool calls accordion ──────────────────────────────────────
+  const calls     = data.function_calls     || [];
+  const responses = data.function_responses || [];
+  if (calls.length || responses.length) {
+    const bodyId = 'tcb-' + Date.now();
+    const count  = calls.length;
+
+    const tcWrap = document.createElement('div');
+    tcWrap.className = 'tc-wrap';
+    tcWrap.innerHTML = `
+      <button class="tc-toggle" onclick="tcToggle('${bodyId}',this)">
+        <div class="tc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </div>
+        Tool Calls
+        <span class="tc-count">${count} call${count!==1?'s':''}</span>
+        <svg class="tc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+      <div class="tc-body" id="${bodyId}"></div>`;
+
+    const body = tcWrap.querySelector('.tc-body');
+
+    // Render call blocks
+    calls.forEach(fc => {
+      const item = document.createElement('div');
+      item.className = 'tc-item';
+      item.innerHTML = `
+        <div class="tc-item-hd">
+          <span class="tc-kind tc-kind-call">Call</span>
+          <span class="tc-fn">${x(fc.name||'?')}</span>
+          <span class="tc-id" title="${x(fc.id||'')}">…${x((fc.id||'').slice(-8)||'—')}</span>
+        </div>
+        <div class="tc-sub">Arguments</div>
+        <div class="tc-json">${x(JSON.stringify(fc.args||fc.partialArgs||{},null,2))}</div>`;
+      body.appendChild(item);
+    });
+
+    // Render response blocks — with smart content extraction
+    responses.forEach(fr => {
+      const item = document.createElement('div');
+      item.className = 'tc-item';
+      const resp    = fr.response || {};
+      const isErr   = resp.isError || false;
+      const raw     = resp.content;
+
+      // Extract human-readable text from whatever shape content arrives in
+      const renderedText = extractResponseContent(raw);
+      // Decide whether it looks like structured JSON (not pure prose)
+      const looksLikeJson = raw !== null && typeof raw === 'object' &&
+        !Array.isArray(raw) ||
+        (Array.isArray(raw) && raw.some(b => b && b.type !== 'text'));
+
+      item.innerHTML = `
+        <div class="tc-item-hd">
+          <span class="tc-kind tc-kind-resp">Response</span>
+          <span class="tc-fn">${x(fr.name||'?')}</span>
+          <span class="${isErr?'tc-err':'tc-ok'}">${isErr?'Error':'OK'}</span>
+          <span class="tc-id" title="${x(fr.id||'')}">…${x((fr.id||'').slice(-8)||'—')}</span>
+        </div>
+        <div class="tc-sub">Result</div>`;
+
+      // Use styled text block for readable text, JSON block for raw data
+      const contentEl = document.createElement('div');
+      if (looksLikeJson) {
+        contentEl.className = 'tc-json';
+        contentEl.textContent = renderedText;
+      } else {
+        contentEl.className = 'tc-resp-text';
+        contentEl.textContent = renderedText;
+      }
+      item.appendChild(contentEl);
+      body.appendChild(item);
+    });
+
+    wrap.appendChild(tcWrap);
+  }
+
+  // ── Final response text ──────────────────────────────────────
+  const final = data.final_response || data.response || data.message || '';
+  if (final) {
+    const bubble = document.createElement('div');
+    bubble.className = 'cmsg-bubble';
+    bubble.innerHTML = x(final)
+      .replace(/`([^`]+)`/g,'<code style="font-family:var(--mono);font-size:12px;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:3px">$1</code>')
+      .replace(/\n/g,'<br>');
+    wrap.appendChild(bubble);
+  }
+
+  log.appendChild(wrap); chatScroll();
+}
+
+function chatPushError(msg) {
+  const log = document.getElementById('chatLog');
+  const el = document.createElement('div');
+  el.className = 'cmsg cmsg-agent cmsg-error';
+  el.innerHTML = `<div class="cmsg-label">Agent</div>
+    <div class="cmsg-bubble">${x(msg)}</div>`;
+  log.appendChild(el); chatScroll();
+}
+
+function tcToggle(id, btn) {
+  document.getElementById(id).classList.toggle('open');
+  btn.querySelector('.tc-chevron').classList.toggle('open');
+}
+
+function chatScroll() {
+  const log = document.getElementById('chatLog');
+  if (log) log.scrollTop = log.scrollHeight;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+loadAgents();
+</script>
+</body>
+</html>

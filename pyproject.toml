@@ -1,0 +1,17 @@
+[project]
+name = "agent-factory"
+version = "0.1.0"
+description = "A agent factory to create and manage agents"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiofiles>=25.1.0",
+    "discord-py>=2.6.4",
+    "fastmcp>=2.14.5",
+    "google-adk[extensions]>=1.24.1",
+    "google-genai>=1.62.0",
+    "ollama>=0.6.1",
+    "opensearch-py>=3.1.0",
+    "redis>=7.1.0",
+    "temporalio>=1.22.0",
+]
