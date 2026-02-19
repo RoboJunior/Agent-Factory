@@ -9,7 +9,6 @@
 - [Core Capabilities](#core-capabilities)
 - [Technology Stack](#technology-stack)
 - [Future Enhancements](#future-enhancements)
-- [License](#license)
 ---
 
 ## Overview
@@ -204,8 +203,4 @@ Approved agents can be bound to Discord, Slack, or Microsoft Teams. Additional i
 - Usage analytics dashboard
 - Multi-tenant isolation
 - Agent archival and lifecycle automation
----
-
-## License
-This project is licensed under the **MIT License**. See `LICENSE` for details.
 ---
